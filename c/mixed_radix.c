@@ -87,7 +87,7 @@ int is_zero(unsigned int *digits, int n_digits) {
  * checks whether a given number
  * represents the maximal possible value
  *
- * returns 1 if number is zero
+ * returns 1 if number is max
  * otherwise 0
  */
 int is_max(unsigned int *digits, unsigned int *radix, int n_digits) {
