@@ -62,3 +62,18 @@ bool jt_perm(jt_handle *h) {
   jt_init(h);
   return false;
 }
+
+bool jt_set(jt_handle *h, jt_handle *val)
+{
+    if (h->n != val->n) {
+        return false;
+    }
+
+    for (int i = 0; i < h->n; i++) {
+        h->arr[i] = val->arr[i];
+        h->pos[i] = val->pos[i];
+        h->dir[i] = val->dir[i];
+    }
+
+    return true;
+}

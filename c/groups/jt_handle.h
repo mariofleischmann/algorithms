@@ -16,5 +16,6 @@ void jt_free(jt_handle *h);
 void jt_print(jt_handle *h);
 void jt_init(jt_handle *h);
 bool jt_perm(jt_handle *h);
+bool jt_set(jt_handle *h, jt_handle *val);
 
 #endif
