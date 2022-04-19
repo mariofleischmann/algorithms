@@ -1,17 +1,22 @@
+/**
+ * find_groups.c
+ * Find all groups until a specific order.
+ */
+
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
 
-#include "group.h"
+#include "cayley_table.h"
 
 #define N 6
 
 struct node {
-    group_t *data;
+    cayley_table_t *data;
     struct node *next;
 };
 
-struct node *node_create(group_t *data)
+static struct node *node_create(cayley_table_t *data)
 {
     struct node *n = malloc(sizeof(struct node));
     n->data = data;
@@ -19,10 +24,15 @@ struct node *node_create(group_t *data)
     return n;
 }
 
-bool is_unique(group_t *g, struct node *head)
+static void node_free(struct node *n) {
+    table_free(n->data);
+    free(n);
+}
+
+static bool list_is_unique(struct node *head, cayley_table_t *t)
 {
     while (head) {
-        if (group_equals(head->data, g)) {
+        if (tables_are_isomorph(head->data, t)) {
             return false;
         }
 
@@ -32,7 +42,7 @@ bool is_unique(group_t *g, struct node *head)
     return true;
 }
 
-void list_append(struct node **head, struct node *n)
+static void list_append(struct node **head, struct node *n)
 {
     while ((*head)->next != NULL) {
         head = &((*head)->next); 
@@ -43,34 +53,31 @@ void list_append(struct node **head, struct node *n)
 
 int main(void)
 {
-    struct node *head = node_create(group_create(1)); // trivial group
+    struct node *head = node_create(table_create(1)); // trivial group
 
     for (int i = 2; i <= N; i++) {
-        group_t *g = group_create(i);
-        while(group_next(g)) {
-            if (is_unique(g, head)) {
-                struct node *new = node_create(group_copy(g));
+        cayley_table_t *t = table_create(i);
+        while(table_next_group(t)) {
+            if (list_is_unique(head, t)) {
+                struct node *new = node_create(table_copy(t));
                 list_append(&head, new);
             }
         }
 
-        group_free(g);
+        table_free(t);
     }
 
     while (head) {
-        group_print(head->data);
-        seq[head->data->n-1]++;
+        table_print(head->data);
         printf("\n");
-       
-        if (!group_commutative(head->data)) {
+
+        if (!table_is_commutative(head->data)) {
             printf("^^^^^^^^^^^^^^^\n");
             printf("Non-Commutative\n\n");
         } 
 
-        // cleanup
         struct node *temp = head;
         head = head->next;
-        group_free(temp->data);
-        free(temp);
+        node_free(temp);
     }
 }

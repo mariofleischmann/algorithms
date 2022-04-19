@@ -1,63 +1,23 @@
+/**
+ * cayley_table.c
+ * Written by Mario Fleischmann
+ */
+
 #include <stdio.h>
-#include "group.h"
 
-group_t *group_create(size_t n)
+#include "cayley_table.h"
+
+static bool no_duplicates_until_row(cayley_table_t *t, int row)
 {
-    group_t *g = malloc(sizeof(group_t)); 
-    g->n = n;
-    g->ok = 1;
-    g->temp = malloc(sizeof(int) * n);
-    g->rows = malloc(sizeof(jt_handle*) * n);
-    for (size_t i = 0; i < g->n; i++) {
-        g->rows[i] = jt_create(n);
-    }
-
-    return g;
-}
-
-void group_free(group_t *g)
-{
-    for (size_t i = 0; i < g->n; i++) {
-        jt_free(g->rows[i]);
-    }
-
-    free(g->temp);
-    free(g->rows);
-    free(g);
-}
-
-void group_print(group_t *g)
-{
-    printf("* |");
-    for (int i = 0; i < (int)g->n; i++) {
-        printf(" %d", i);
-    }
-
-    printf("\n--+");
-
-    for (size_t i = 0; i < g->n; i++) {
-        printf("--");
-    }
-
-    printf("\n");
-
-    for (int i = 0; i < (int)g->n; i++) {
-        printf("%d | ", i);
-        jt_print(g->rows[i]);
-    }
-}
-
-static bool is_ok_until_row(group_t *g, int row)
-{
-    for (int i = 0; i < (int)g->n; i++) {
-        for (int j = 0; j < (int)g->n; j++) {
-            g->temp[j] = 0;
+    // Find duplicates by hashing
+    for (size_t i = 0; i < t->n; i++) {
+        for (size_t j = 0; j < t->n; j++) {
+            t->buff[j] = 0;
         }
 
         for (int j = 0; j <= row; j++) {
-            int e = g->rows[j]->arr[i];
-            g->temp[e] += 1;
-            if (g->temp[e] > 1) {
+            int e = t->rows[j]->arr[i];
+            if (t->buff[e]++ > 1) {
                 return false;
             }
         }
@@ -66,10 +26,10 @@ static bool is_ok_until_row(group_t *g, int row)
     return true; 
 }
 
-static bool has_neutral(group_t *g, int row)
+static bool neutral_until_row(cayley_table_t *t, int row)
 {
     for (int i = 0; i < row; i++) {
-        if (g->rows[i]->arr[0] != g->rows[0]->arr[i]) {
+        if (t->rows[i]->arr[0] != t->rows[0]->arr[i]) {
             return false;
         }
     }
@@ -77,77 +37,96 @@ static bool has_neutral(group_t *g, int row)
     return true;
 } 
 
-bool group_next(group_t *g)
+cayley_table_t *table_create(size_t n)
 {
-    if (g->n == 1) {
-        // trivial group
-        return false;
+    cayley_table_t *t = malloc(sizeof(cayley_table_t)); 
+    t->n = n;
+    t->ok = 1;
+    t->buff = malloc(sizeof(int) * n);
+    t->rows = malloc(sizeof(jt_set_t *) * n);
+    for (size_t i = 0; i < t->n; i++) {
+        t->rows[i] = jt_create(n);
     }
 
-    if (is_group(g)) {
-        g->ok--;
+    return t;
+}
+
+cayley_table_t *table_copy(cayley_table_t *t)
+{
+    cayley_table_t *new = table_create(t->n);
+    new->ok = t->ok;
+    for (size_t i = 0; i < t->n; i++) {
+        jt_assign_value(new->rows[i], t->rows[i]);
     }
 
-    while (g->ok < g->n) {
-        bool overflow;
-        do {
-            overflow = !jt_perm(g->rows[g->ok]);
-            if (overflow) {
-                break;
-            }
+    return new;
+}
 
-        } while (!has_neutral(g, g->ok) || !is_ok_until_row(g, g->ok));
+void table_free(cayley_table_t *t)
+{
+    for (size_t i = 0; i < t->n; i++) {
+        jt_free(t->rows[i]);
+    }
 
-        if (overflow) {
-            if (g->ok == 1) {
-                return false;
-            } else {
-                g->ok--;
+    free(t->buff);
+    free(t->rows);
+    free(t);
+}
+
+int table_eval(cayley_table_t *t, int a, int b)
+{
+    return t->rows[a]->arr[b];
+}
+
+bool table_is_associative(cayley_table_t *t)
+{
+    for (int a = 0; a < (int)t->n; a++) {
+        for (int b = 0; b < (int)t->n; b++) {
+            for (int c = 0; c < (int)t->n; c++) {
+                int bc = table_eval(t, b, c); 
+                int ab = table_eval(t, a, b); 
+                int res1 = table_eval(t, a, bc);
+                int res2 = table_eval(t, ab, c);
+                if (res1 != res2) {
+                    return false;
+                }
             }
-        } else {
-            g->ok++;
         }
     }
-
-    if (!group_associative(g)) {
-        return group_next(g);
-    } 
 
     return true;
 }
 
-bool is_group(group_t *g)
+bool table_is_commutative(cayley_table_t *t)
 {
-    return g->ok == g->n;
+    for (int a = 0; a < (int)t->n; a++) {
+        for (int b = 0; b < (int)t->n; b++) {
+            if (table_eval(t, a, b) != table_eval(t, b, a)) {
+                return false;
+            }
+        }
+    }
+
+    return true;
 }
 
-
-int group_eval(group_t *g, int a, int b)
+bool tables_are_isomorph(cayley_table_t *t1, cayley_table_t *t2)
 {
-    return g->rows[a]->arr[b];
-}
-
-bool group_equals(group_t *g1, group_t *g2)
-{
-    if (g1->n != g2->n) {
+    if (t1->n != t2->n) {
         return false;
     }
 
-    // Check if there is a mapping
-    // {1, 2, ..., n-1} <-> {1, 2, ..., n-1}
-    // such that for every a, b
-    // a * b = map^-1((map(a) * map(b)) 
-
-    jt_handle *jt = jt_create(g1->n);
+    // Check every possible mapping with existing permutation algorithm
+    jt_set_t *jt = jt_create(t1->n);
     while (jt_perm(jt)) {
         bool isomorph = true;
 
-        for (int a = 0; a < g1->n && isomorph; a++) {
-            for (int b = 0; b < g1->n && isomorph; b++) {
+        for (int a = 0; a < (int)t1->n && isomorph; a++) {
+            for (int b = 0; b < (int)t1->n && isomorph; b++) {
                 int _a = jt->arr[a];
                 int _b = jt->arr[b];
-                int res = group_eval(g1, a, b); 
-                int _res = group_eval(g2, _a, _b); 
+                int res = table_eval(t1, a, b); 
+                int _res = table_eval(t2, _a, _b); 
 
                 if (res != jt->pos[_res]) {
                     isomorph = false;
@@ -165,46 +144,63 @@ bool group_equals(group_t *g1, group_t *g2)
     return false;
 }
 
-// check if for every a, b, c
-// a * (b * c) = (a * b) * c
-bool group_associative(group_t *g)
+void table_print(cayley_table_t *t)
 {
-    for (int a = 0; a < g->n; a++) {
-        for (int b = 0; b < g->n; b++) {
-            for (int c = 0; c < g->n; c++) {
-                int bc = group_eval(g, b, c); 
-                int ab = group_eval(g, a, b); 
-                int res1 = group_eval(g, a, bc);
-                int res2 = group_eval(g, ab, c);
-                if (res1 != res2) {
-                    return false;
-                }
-            }
-        }
+    printf("* |");
+    for (int i = 0; i < (int)t->n; i++) {
+        printf(" %d", i);
     }
 
-    return true;
+    printf("\n--+");
+
+    for (size_t i = 0; i < t->n; i++) {
+        printf("--");
+    }
+
+    printf("\n");
+
+    for (int i = 0; i < (int)t->n; i++) {
+        printf("%d | ", i);
+        jt_print(t->rows[i]);
+    }
 }
 
-bool group_commutative(group_t *g)
+bool table_next_group(cayley_table_t *t)
 {
-    for (int a = 0; a < g->n; a++) {
-        for (int b = 0; b < g->n; b++) {
-            if (group_eval(g, a, b) != group_eval(g, b, a)) {
+    if (t->n == 1) {
+        // trivial group
+        return false;
+    }
+
+    if (t->ok == (int)t->n) {
+        t->ok--;
+    }
+
+    while (t->ok < (int)t->n) {
+        bool cycle;
+        do {
+            cycle = !jt_perm(t->rows[t->ok]);
+            if (cycle) {
+                break;
+            }
+        } while (!neutral_until_row(t, t->ok) ||
+                 !no_duplicates_until_row(t, t->ok));
+
+        if (cycle) {
+            if (t->ok == 1) {
+                // complete cycle
                 return false;
+            } else {
+                t->ok--;
             }
+        } else {
+            t->ok++;
         }
     }
 
+    if (!table_is_associative(t)) {
+        return table_next_group(t);
+    } 
+
     return true;
-}
-
-group_t *group_copy(group_t *g) {
-    group_t *new = group_create(g->n);
-    new->ok = g->ok;
-    for (size_t i = 0; i < g->n; i++) {
-        jt_set(new->rows[i], g->rows[i]);
-    }
-
-    return new;
 }

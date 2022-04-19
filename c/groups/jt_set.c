@@ -1,79 +1,90 @@
+/**
+ * jt_set.c
+ * Written by Mario Fleischmann
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
-#include "jt_handle.h"
 
-jt_handle *jt_create(size_t n) {
-  jt_handle *h = malloc(sizeof(jt_handle));
+#include "jt_set.h"
 
-  h->arr = malloc(sizeof(int) * n);
-  h->pos = malloc(sizeof(int) * n);
-  h->dir = malloc(sizeof(int) * n);
-  h->n = n;
+jt_set_t *jt_create(size_t n)
+{
+  jt_set_t *s = malloc(sizeof(jt_set_t));
 
-  jt_init(h);
+  s->arr = malloc(sizeof(int) * n);
+  s->pos = malloc(sizeof(int) * n);
+  s->dir = malloc(sizeof(int) * n);
+  s->n = n;
 
-  return h;
+  jt_init(s);
+
+  return s;
 }
 
-void jt_free(jt_handle *h) {
-  free(h->arr);
-  free(h->pos);
-  free(h->dir);
-  free(h);
+void jt_free(jt_set_t *s)
+{
+  free(s->arr);
+  free(s->pos);
+  free(s->dir);
+  free(s);
 }
 
-void jt_init(jt_handle *h) {
-  for (size_t i = 0; i < h->n; i++) {
-    h->arr[i] = i;
-    h->pos[i] = i;
-    h->dir[i] = 1;
+void jt_init(jt_set_t *s)
+{
+  for (size_t i = 0; i < s->n; i++) {
+    s->arr[i] = i;
+    s->pos[i] = i;
+    s->dir[i] = 1;
   }
 }
 
-void jt_print(jt_handle *h) {
-  for (size_t i = 0; i < h->n; i++) {
-    printf("%d ", h->arr[i]);
+bool jt_assign_value(jt_set_t *s1, jt_set_t *s2)
+{
+    if (s1->n != s2->n) {
+        return false;
+    }
+
+    for (size_t i = 0; i < s1->n; i++) {
+        s1->arr[i] = s2->arr[i];
+        s1->pos[i] = s2->pos[i];
+        s1->dir[i] = s2->dir[i];
+    }
+
+    return true;
+}
+
+void jt_print(jt_set_t *s)
+{
+  for (size_t i = 0; i < s->n; i++) {
+    printf("%d ", s->arr[i]);
   }   
 
   printf("\n");
 }
 
-bool jt_perm(jt_handle *h) {
-  for (int i = 0; i < (int)h->n; i++) {
-    int p = h->pos[i];
-    int d = h->dir[i];
+bool jt_perm(jt_set_t *s)
+{
+  for (size_t i = 0; i < s->n; i++) {
+    int p = s->pos[i];
+    int d = s->dir[i];
     int n_pos = p+d;
-    int neighbor = h->arr[n_pos];
+    int neighbor = s->arr[n_pos];
 
-    if (n_pos >= 0 && n_pos < (int)h->n && i < neighbor) {
+    if (n_pos >= 0 && n_pos < (int)s->n && (int)i < neighbor) {
       // swap elements
-      h->arr[p] = neighbor;
-      h->arr[p+d] = i;
+      s->arr[p] = neighbor;
+      s->arr[p+d] = i;
 
       // update positions
-      h->pos[i] += d;
-      h->pos[neighbor] -= d;
+      s->pos[i] += d;
+      s->pos[neighbor] -= d;
       return true;
     } else {
-      h->dir[i] = (h->dir[i] == 1) ? -1 : 1;
+      s->dir[i] = (s->dir[i] == 1) ? -1 : 1;
     }
   }
 
-  jt_init(h);
+  jt_init(s);
   return false;
-}
-
-bool jt_set(jt_handle *h, jt_handle *val)
-{
-    if (h->n != val->n) {
-        return false;
-    }
-
-    for (int i = 0; i < h->n; i++) {
-        h->arr[i] = val->arr[i];
-        h->pos[i] = val->pos[i];
-        h->dir[i] = val->dir[i];
-    }
-
-    return true;
 }
