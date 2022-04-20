@@ -17,7 +17,8 @@ static bool no_duplicates_until_row(cayley_table_t *t, int row)
 
         for (int j = 0; j <= row; j++) {
             int e = t->rows[j]->arr[i];
-            if (t->buff[e]++ > 1) {
+            t->buff[e] += 1;
+            if (t->buff[e] > 1) {
                 return false;
             }
         }
