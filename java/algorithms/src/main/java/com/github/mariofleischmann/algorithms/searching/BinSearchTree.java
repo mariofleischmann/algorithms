@@ -9,24 +9,26 @@ public class BinSearchTree<T extends Comparable<T>> {
     private int size = 0;
 
     public void insert(T value) {
+        TreeNode<T> parent = null;
         TreeNode<T> child = this.root;
-        TreeNode<T> parent =  null;
 
         while (child != null) {
             parent = child;
             if (value.compareTo(parent.value()) < 0) {
-                child = parent.left();
+                child = parent.left;
             } else {
-                child = parent.right();
+                child = parent.right;
             }
         }
 
+        TreeNode<T> n = new TreeNode<>(value);
+        n.parent = parent;
         if (parent == null) {
-            this.root = new TreeNode<>(value);
+            this.root = n;
         } else if (value.compareTo(parent.value()) < 0) {
-            parent.setLeft(new TreeNode<>(value));
+            parent.left = n;
         } else {
-            parent.setRight(new TreeNode<>(value));
+            parent.right = n;
         }
 
         this.size++;
@@ -38,9 +40,9 @@ public class BinSearchTree<T extends Comparable<T>> {
 
     private void walk(TreeNode<T> start) {
         if (start != null) {
-            walk(start.left());
+            walk(start.left);
             System.out.println(start.value().toString());
-            walk(start.right());
+            walk(start.right);
         }
     }
 
@@ -63,14 +65,14 @@ public class BinSearchTree<T extends Comparable<T>> {
     }
 
     private int treeWalk(TreeNode<T> node, TreeNode<T>[][] grid, int d, int x) {
-        if (node.left() != null) {
-            x = treeWalk(node.left(), grid, d+1, x);
+        if (node.left != null) {
+            x = treeWalk(node.left, grid, d+1, x);
         }
 
         grid[d][x++] = node;
 
-        if (node.right() != null) {
-            x = treeWalk(node.right(), grid, d+1, x);
+        if (node.right != null) {
+            x = treeWalk(node.right, grid, d+1, x);
         }
 
         return x;
@@ -84,8 +86,8 @@ public class BinSearchTree<T extends Comparable<T>> {
         if (node == null) {
             return i;
         } else {
-            int l = height(node.left(), i + 1);
-            int r = height(node.right(), i + 1);
+            int l = height(node.left, i + 1);
+            int r = height(node.right, i + 1);
             return Math.max(l, r);
         }
     }
@@ -100,19 +102,19 @@ public class BinSearchTree<T extends Comparable<T>> {
         }
 
         if (value.compareTo(start.value()) < 0) {
-            return this.search(start.left(), value);
+            return this.search(start.left, value);
         } else {
-            return this.search(start.right(), value);
+            return this.search(start.right, value);
         }
     }
 
     public TreeNode<T> successor(TreeNode<T> node) {
-        if (node.right() == null) {
+        if (node.right == null) {
             return null; // no successor
         } else {
-            TreeNode<T> successor = node.right();
-            while (successor.left() != null) {
-                successor = successor.left();
+            TreeNode<T> successor = node.right;
+            while (successor.left != null) {
+                successor = successor.left;
             }
 
             return successor;
@@ -120,58 +122,42 @@ public class BinSearchTree<T extends Comparable<T>> {
     }
 
     public boolean delete(T value) {
-        TreeNode<T> parent = null;
-        TreeNode<T> node = this.root;
-
-        int c = 0;
-        while (node != null && (c = value.compareTo(node.value())) != 0) {
-            parent = node;
-            if (c < 0) {
-                node = node.left();
-            } else {
-                node = node.right();
-            }
-        }
-
+        TreeNode<T> node = this.search(value);
         if (node == null) {
             // Node not found
             return false;
         }
 
         TreeNode<T> replacingNode;
-        if (node.left() == null) {
-            replacingNode = node.right();
-        } else if (node.left() != null && node.right() == null) {
-            replacingNode = node.left();
+        if (node.left == null) {
+            replacingNode = node.right;
+        } else if (node.right == null) {
+            replacingNode = node.left;
         } else {
-            // search for direct successor
-            replacingNode = node.right();
-            boolean isDirectSuccessor = replacingNode.left() == null;
-            if (isDirectSuccessor) {
-                replacingNode.setLeft(node.left());
-            } else {
-                TreeNode<T> successorsParent = replacingNode;
-                replacingNode = replacingNode.left();
-                while(replacingNode.left() != null) {
-                    successorsParent = replacingNode;
-                    replacingNode = replacingNode.left();
-                }
-
-                successorsParent.setLeft(replacingNode.right());
-                replacingNode.setLeft(node.left());
-                replacingNode.setRight(node.right());
+            replacingNode = this.successor(node);
+            boolean directSuccessor = replacingNode.parent == node;
+            if (!directSuccessor) {
+                replacingNode.parent.left = replacingNode.right;
+                replacingNode.right = node.right;
+                node.right.parent = replacingNode;
             }
+            replacingNode.left = node.left;
+            node.left.parent = replacingNode;
+        }
+
+        if (replacingNode != null) {
+            replacingNode.parent = node.parent;
+            this.size--;
         }
 
         if (node == this.root) {
             this.root = replacingNode;
-        } else if (parent.left() == node) {
-            parent.setLeft(replacingNode);
+        } else if (node.parent.left == node) {
+            node.parent.left = replacingNode;
         } else {
-            parent.setRight(replacingNode);
+            node.parent.right = replacingNode;
         }
 
-        this.size--;
         return true;
     }
 }
