@@ -1,5 +1,8 @@
 package com.github.mariofleischmann.algorithms.searching;
 
+import java.util.LinkedList;
+import java.util.Queue;
+
 /**
  * Implements a binary search tree.
  * @param <T> type of values to be stored in the tree.
@@ -64,6 +67,22 @@ public class BinSearchTree<T extends Comparable<T>> {
         System.out.print(output);
     }
 
+    public void walkLevel() {
+        Queue<TreeNode<T>> q = new LinkedList<>();
+        q.add(this.root);
+        while (q.size() > 0) {
+            TreeNode<T> n = q.remove();
+            System.out.println(n.value().toString());
+
+            if (n.left != null) {
+                q.add(n.left);
+            }
+            if (n.right != null) {
+                q.add(n.right);
+            }
+        }
+    }
+
     private int treeWalk(TreeNode<T> node, TreeNode<T>[][] grid, int d, int x) {
         if (node.left != null) {
             x = treeWalk(node.left, grid, d+1, x);
@@ -119,6 +138,31 @@ public class BinSearchTree<T extends Comparable<T>> {
 
             return successor;
         }
+    }
+
+    public TreeNode<T> realSucc(TreeNode<T> node) {
+        // Try to find successor of node x
+        TreeNode<T> s = successor(node);
+        if (s != null) {
+            return s;
+        }
+
+        // If no successor of x is found, find y
+        // for which the direct predecessor is x.
+
+        //   y
+        // o
+        //   o
+        //     o
+        //       x
+
+        TreeNode<T> p = node.parent;
+        while (p != null && node == p.right) {
+            node = p;
+            p = p.parent;
+        }
+
+        return p;
     }
 
     public boolean delete(T value) {
