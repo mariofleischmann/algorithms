@@ -67,7 +67,7 @@ public class BTree<T extends Comparable<T>> {
 
     private BTreeNode<T> search (T data, BTreeNode<T> node) {
         int i = 0;
-        while (i < node.n && data.compareTo(node.keys.get(i)) < 0) {
+        while (i < node.n && data.compareTo(node.keys.get(i)) > 0) {
             i++;
         }
 
@@ -192,11 +192,12 @@ public class BTree<T extends Comparable<T>> {
         }
 
         public void walk() {
+            System.out.print("( ");
             for (int i = 0; i < this.n; i++) {
                 System.out.print(this.keys.get(i).toString() + " ");
             }
 
-            System.out.println();
+            System.out.println(")");
         }
     }
 }
