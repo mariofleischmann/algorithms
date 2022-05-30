@@ -20,7 +20,7 @@ public class LinkedHashTable {
     }
 
     private int h(int x) {
-        return (int) Math.floor((x * A - Math.floor(x * A)) * this.m);
+        return (int) Math.floor((x*A - Math.floor(x*A)) * this.m);
     }
 
     public void insert(int x) {
@@ -61,6 +61,30 @@ public class LinkedHashTable {
     }
 
     public int getLongestListLength() {
-        return this.table.stream().reduce(this.table.get(0), (a, b) -> a.size() > b.size() ? a : b).size();
+        int max = Integer.MIN_VALUE;
+        for (LinkedList<Integer> l : this.table) {
+            int s = l.size();
+            if (s > max) {
+                max = s;
+            }
+        }
+
+        return max;
+    }
+
+    public int sondierung1(int x, int i) {
+        return (this.h(x) + i) % this.m;
+    }
+
+    public int sondierung2(int x, int i) {
+        return (this.h(x) + i + 14 * i * i) % this.m;
+    }
+
+    public int sondierung3(int x, int i) {
+        if (i % 2 == 0) {
+            return (this.h(x) + i * i) % this.m;
+        } else {
+            return ((this.h(x) - i * i) % m + m) % m;
+        }
     }
 }
